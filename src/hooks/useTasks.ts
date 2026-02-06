@@ -3,7 +3,7 @@ import { Task, TaskStatus } from '@/types/task';
 
 const STORAGE_KEY = 'taskflow-tasks';
 const AUTO_DELETE_HOURS = 24;
-const REMINDER_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const REMINDER_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
