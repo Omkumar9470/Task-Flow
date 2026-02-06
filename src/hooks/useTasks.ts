@@ -3,28 +3,36 @@ import { Task, TaskStatus } from '@/types/task';
 
 const STORAGE_KEY = 'taskflow-tasks';
 const AUTO_DELETE_HOURS = 24;
-const REMINDER_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+export const REMINDER_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load tasks from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
         const parsed = JSON.parse(stored) as Task[];
         setTasks(parsed);
-      } catch {
-        console.error('Failed to parse tasks from localStorage');
       }
+    } catch (error) {
+      console.error('[Tasks] Failed to parse tasks from localStorage:', error);
     }
+    setIsLoaded(true);
   }, []);
 
-  // Save tasks to localStorage whenever they change
+  // Save tasks to localStorage whenever they change (only after initial load)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  }, [tasks]);
+    if (isLoaded) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      } catch (error) {
+        console.error('[Tasks] Failed to save tasks to localStorage:', error);
+      }
+    }
+  }, [tasks, isLoaded]);
 
   // Auto-delete completed tasks after 24 hours
   useEffect(() => {
@@ -41,44 +49,6 @@ export const useTasks = () => {
     }, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, []);
-
-  // Hourly reminders for "working" tasks
-  useEffect(() => {
-    const checkReminders = () => {
-      const now = Date.now();
-      const workingTasks = tasks.filter(t => t.status === 'working');
-      
-      workingTasks.forEach(task => {
-        const lastReminder = task.lastReminderAt ? new Date(task.lastReminderAt).getTime() : 0;
-        const timeSinceReminder = now - lastReminder;
-        
-        if (timeSinceReminder >= REMINDER_INTERVAL_MS) {
-          sendReminder(task);
-          updateTask(task.id, { lastReminderAt: new Date().toISOString() });
-        }
-      });
-    };
-
-    const interval = setInterval(checkReminders, 60000); // Check every minute
-    checkReminders(); // Check immediately
-
-    return () => clearInterval(interval);
-  }, [tasks]);
-
-  const sendReminder = (task: Task) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Task Reminder', {
-        body: `You're still working on: ${task.title}`,
-        icon: '/favicon.ico',
-      });
-    }
-  };
-
-  const requestNotificationPermission = useCallback(async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
   }, []);
 
   const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
@@ -112,7 +82,6 @@ export const useTasks = () => {
         updates.completedAt = new Date().toISOString();
       } else if (status === 'working') {
         updates.lastReminderAt = new Date().toISOString();
-        requestNotificationPermission();
       }
       
       if (status !== 'completed') {
@@ -121,7 +90,7 @@ export const useTasks = () => {
       
       return { ...task, ...updates };
     }));
-  }, [requestNotificationPermission]);
+  }, []);
 
   const getTasksByDate = useCallback((date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
@@ -140,14 +109,19 @@ export const useTasks = () => {
     });
   }, [tasks]);
 
+  const getWorkingTasks = useCallback(() => {
+    return tasks.filter(t => t.status === 'working');
+  }, [tasks]);
+
   return {
     tasks,
+    isLoaded,
     addTask,
     updateTask,
     deleteTask,
     setTaskStatus,
     getTasksByDate,
     getTasksForMonth,
-    requestNotificationPermission,
+    getWorkingTasks,
   };
 };

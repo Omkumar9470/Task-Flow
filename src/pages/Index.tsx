@@ -1,25 +1,66 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Task, TaskStatus } from '@/types/task';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, REMINDER_INTERVAL_MS } from '@/hooks/useTasks';
 import { useTheme } from '@/hooks/useTheme';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Header } from '@/components/Header';
 import { TaskList } from '@/components/TaskList';
 import { TaskForm } from '@/components/TaskForm';
 import { CalendarView } from '@/components/CalendarView';
 import { FilterTabs } from '@/components/FilterTabs';
+import { ReminderBanner } from '@/components/ReminderBanner';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
 const Index = () => {
-  const { tasks, addTask, updateTask, deleteTask, setTaskStatus, getTasksByDate } = useTasks();
+  const { 
+    tasks, 
+    isLoaded,
+    addTask, 
+    updateTask, 
+    deleteTask, 
+    setTaskStatus, 
+    getTasksByDate,
+    getWorkingTasks 
+  } = useTasks();
+  
   const { isDark, toggleTheme } = useTheme();
+  
+  const {
+    permission,
+    inAppReminders,
+    requestPermission,
+    scheduleReminder,
+    cancelReminder,
+    dismissInAppReminder,
+    clearAllInAppReminders
+  } = useNotifications();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeFilter, setActiveFilter] = useState<TaskStatus | 'all'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Manage reminders for working tasks
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const workingTasks = getWorkingTasks();
+    
+    // Schedule reminders for all working tasks
+    workingTasks.forEach(task => {
+      scheduleReminder(task.id, task.title, REMINDER_INTERVAL_MS);
+    });
+    
+    // Cancel reminders for tasks that are no longer working
+    tasks.forEach(task => {
+      if (task.status !== 'working') {
+        cancelReminder(task.id);
+      }
+    });
+  }, [tasks, isLoaded, getWorkingTasks, scheduleReminder, cancelReminder]);
 
   const taskCounts = useMemo(() => ({
     all: tasks.length,
@@ -59,11 +100,29 @@ const Index = () => {
     setSelectedDate(date);
   };
 
+  // Show loading state while tasks are being loaded
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading tasks...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header isDark={isDark} onToggleTheme={toggleTheme} />
       
       <main className="container mx-auto px-4 py-6 max-w-3xl">
+        {/* Reminder Banner */}
+        <ReminderBanner
+          reminders={inAppReminders}
+          permission={permission}
+          onDismiss={dismissInAppReminder}
+          onDismissAll={clearAllInAppReminders}
+          onRequestPermission={requestPermission}
+        />
+
         {/* Page Title */}
         <div className="flex items-center justify-between mb-6">
           <div>
