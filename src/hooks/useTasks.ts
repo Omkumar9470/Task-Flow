@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Task, TaskStatus } from '@/types/task';
 
 const STORAGE_KEY = 'taskflow-tasks';
-const AUTO_DELETE_HOURS = 24;
+const AUTO_DELETE_HOURS = 12;
 export const REMINDER_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 export const useTasks = () => {
