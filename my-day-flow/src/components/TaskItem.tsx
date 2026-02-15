@@ -38,6 +38,7 @@ const statusConfig = {
     icon: Check,
     className: 'bg-success/15 text-success',
   },
+  
 };
 
 export const TaskItem = ({ task, onStatusChange, onDelete, onEdit }: TaskItemProps) => {
