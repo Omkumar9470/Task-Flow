@@ -48,7 +48,7 @@ export const TaskItem = ({ task, onStatusChange, onDelete, onEdit }: TaskItemPro
   const getTimeRemaining = () => {
     if (task.status !== 'completed' || !task.completedAt) return null;
     const completedTime = new Date(task.completedAt).getTime();
-    const deleteTime = completedTime + 24 * 60 * 60 * 1000;
+    const deleteTime = completedTime + 12 * 60 * 60 * 1000;
     const remaining = deleteTime - Date.now();
     const hours = Math.floor(remaining / (1000 * 60 * 60));
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
