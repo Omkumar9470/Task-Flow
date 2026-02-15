@@ -39,7 +39,7 @@ const Index = () => {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [activeFilter, setActiveFilter] = useState<TaskStatus | 'all'>('all');
+  const [activeFilter, setActiveFilter] = useState<TaskStatus | 'all'>('pending');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
