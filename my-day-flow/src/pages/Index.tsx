@@ -82,6 +82,7 @@ const Index = () => {
     } else {
       addTask(data);
     }
+    
     setIsFormOpen(false);
     setEditingTask(null);
   };
